@@ -1,4 +1,8 @@
-__version__ = "2018.1.0"
+__version__ = "2019.1.0"
+
+import os
+# Allow override from env variable
+__version__ = os.environ.get("REZ_MESHROOM_VERSION", __version__)
 
 import logging
 from enum import Enum
