@@ -9,6 +9,7 @@ from PySide2.QtWidgets import QApplication
 import meshroom
 from meshroom.core import nodesDesc
 from meshroom.ui import components
+from meshroom.ui.components.clipboard import ClipboardHelper
 from meshroom.ui.components.filepath import FilepathHelper
 from meshroom.ui.components.scene3D import Scene3DHelper
 from meshroom.ui.palette import PaletteManager
@@ -55,12 +56,26 @@ class MeshroomApp(QApplication):
     """ Meshroom UI Application. """
     def __init__(self, args):
         QtArgs = [args[0], '-style', 'fusion'] + args[1:]  # force Fusion style by default
+
+        parser = argparse.ArgumentParser(prog=args[0], description='Launch Meshroom UI.', add_help=True)
+
+        parser.add_argument('project', metavar='PROJECT', type=str, nargs='?',
+                            help='Meshroom project file (e.g. myProject.mg) or folder with images to reconstruct.')
+        parser.add_argument('-i', '--import', metavar='IMAGES/FOLDERS', type=str, nargs='*',
+                            help='Import images or folder with images to reconstruct.')
+        parser.add_argument('-I', '--importRecursive', metavar='FOLDERS', type=str, nargs='*',
+                            help='Import images to reconstruct from specified folder and sub-folders.')
+        parser.add_argument('-p', '--pipeline', metavar='MESHROOM_FILE', type=str, required=False,
+                            help='Override the default Meshroom pipeline with this external graph.')
+
+        args = parser.parse_args(args[1:])
+
         super(MeshroomApp, self).__init__(QtArgs)
 
         self.setOrganizationName('AliceVision')
         self.setApplicationName('Meshroom')
         self.setAttribute(Qt.AA_EnableHighDpiScaling)
-        self.setApplicationVersion(meshroom.__version__)
+        self.setApplicationVersion(meshroom.__version_name__)
 
         font = self.font()
         font.setPointSize(9)
@@ -84,24 +99,49 @@ class MeshroomApp(QApplication):
 
         # expose available node types that can be instantiated
         self.engine.rootContext().setContextProperty("_nodeTypes", sorted(nodesDesc.keys()))
+
+        # instantiate Reconstruction object
         r = Reconstruction(parent=self)
         self.engine.rootContext().setContextProperty("_reconstruction", r)
-        pm = PaletteManager(self.engine, parent=self)
-        self.engine.rootContext().setContextProperty("_PaletteManager", pm)
-        fpHelper = FilepathHelper(parent=self)
-        self.engine.rootContext().setContextProperty("Filepath", fpHelper)
-        scene3DHelper = Scene3DHelper(parent=self)
-        self.engine.rootContext().setContextProperty("Scene3DHelper", scene3DHelper)
-        self.engine.rootContext().setContextProperty("MeshroomApp", self)
-        # Request any potential computation to stop on exit
-        self.aboutToQuit.connect(r.stopExecution)
 
-        parser = argparse.ArgumentParser(prog=args[0], description='Launch Meshroom UI.')
-        parser.add_argument('--project', metavar='MESHROOM_FILE', type=str, required=False,
-                            help='Meshroom project file (e.g. myProject.mg).')
-        args = parser.parse_args(args[1:])
+        # those helpers should be available from QML Utils module as singletons, but:
+        #  - qmlRegisterUncreatableType is not yet available in PySide2
+        #  - declaring them as singleton in qmldir file causes random crash at exit
+        # => expose them as context properties instead
+        self.engine.rootContext().setContextProperty("Filepath", FilepathHelper(parent=self))
+        self.engine.rootContext().setContextProperty("Scene3DHelper", Scene3DHelper(parent=self))
+        self.engine.rootContext().setContextProperty("Clipboard", ClipboardHelper(parent=self))
+
+        # additional context properties
+        self.engine.rootContext().setContextProperty("_PaletteManager", PaletteManager(self.engine, parent=self))
+        self.engine.rootContext().setContextProperty("MeshroomApp", self)
+
+        # request any potential computation to stop on exit
+        self.aboutToQuit.connect(r.stopChildThreads)
+
+        if args.pipeline:
+            # the pipeline from the command line has the priority
+            r.setDefaultPipeline(args.pipeline)
+        else:
+            # consider the environment variable
+            defaultPipeline = os.environ.get("MESHROOM_DEFAULT_PIPELINE", "")
+            if defaultPipeline:
+                r.setDefaultPipeline(args.pipeline)
+
+        if args.project and not os.path.isfile(args.project):
+            raise RuntimeError(
+                "Meshroom Command Line Error: 'PROJECT' argument should be a Meshroom project file (.mg).\n"
+                "Invalid value: '{}'".format(args.project))
+
         if args.project:
-            r.loadUrl(QUrl.fromLocalFile(args.project))
+            r.load(args.project)
+
+        # import is a python keyword, so we have to access the attribute by a string
+        if getattr(args, "import", None):
+            r.importImagesFromFolder(getattr(args, "import"), recursive=False)
+
+        if args.importRecursive:
+            r.importImagesFromFolder(args.importRecursive, recursive=True)
 
         self.engine.load(os.path.normpath(url))
 

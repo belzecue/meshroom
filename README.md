@@ -1,5 +1,7 @@
 # ![Meshroom - 3D Reconstruction Software](/docs/logo/banner-meshroom.png)
 
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/2997/badge)](https://bestpractices.coreinfrastructure.org/projects/2997)
+
 Meshroom is a free, open-source 3D Reconstruction Software based on the [AliceVision](https://github.com/alicevision/AliceVision) Photogrammetric Computer Vision framework.
 
 Learn more details about the pipeline on [AliceVision website](http://alicevision.github.io).
@@ -21,6 +23,34 @@ The goal of photogrammetry is to reverse this process.
 See the [presentation of the pipeline steps](http://alicevision.github.io/#photogrammetry).
 
 
+## Manual
+
+https://meshroom-manual.readthedocs.io
+
+
+## Tutorials
+
+* [Meshroom: Open Source 3D Reconstruction Software](https://www.youtube.com/watch?v=v_O6tYKQEBA) by [Mikros Image](http://www.mikrosimage.com)
+
+Overall presentation of the Meshroom software.
+
+* [Meshroom Tutorial on Sketchfab](https://sketchfab.com/blogs/community/tutorial-meshroom-for-beginners) by [Mikros Image](http://www.mikrosimage.com)
+
+Detailed tutorial with a focus on the features of the 2019.1 release.
+
+* [Photogrammetry 2 – 3D scanning with just PHONE/CAMERA simpler, better than ever!](https://www.youtube.com/watch?v=1D0EhSi-vvc) by [Prusa 3D Printer](https://blog.prusaprinters.org)
+
+Overall presentation of the protogrammetry practice with Meshroom.
+
+* [How to 3D Photoscan Easy and Free! by ](https://www.youtube.com/watch?v=k4NTf0hMjtY) by [CG Geek](https://www.youtube.com/channel/UCG8AxMVa6eutIGxrdnDxWpQ)
+
+Overall presentation of the protogrammetry practice with Meshroom and detailed presentation how to do the retolopogy in Blender.
+
+* [Meshroom Survival Guide](https://www.youtube.com/watch?v=eiEaHLNJJ94) by [Moviola](https://moviola.com)
+
+Presentation of the Meshroom software with a focus on using it for Match Moving.
+
+
 ## License
 
 The project is released under MPLv2, see [**COPYING.md**](COPYING.md).
@@ -36,6 +66,7 @@ git clone --recursive git://github.com/alicevision/meshroom
 cd meshroom
 pip install -r requirements.txt
 ```
+
 
 ## Start Meshroom
 

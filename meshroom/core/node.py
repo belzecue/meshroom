@@ -144,6 +144,7 @@ class NodeChunk(BaseObject):
         self.range = range
         self.status = StatusData(node.name, node.nodeType, node.packageName, node.packageVersion)
         self.statistics = stats.Statistics()
+        self.statusFileLastModTime = -1
         self._subprocess = None
         # notify update in filepaths when node's internal folder changes
         self.node.internalFolderChanged.connect(self.nodeFolderChanged)
@@ -175,11 +176,13 @@ class NodeChunk(BaseObject):
         oldStatus = self.status.status
         # No status file => reset status to Status.None
         if not os.path.exists(statusFile):
+            self.statusFileLastModTime = -1
             self.status.reset()
         else:
             with open(statusFile, 'r') as jsonFile:
                 statusData = json.load(jsonFile)
             self.status.fromDict(statusData)
+            self.statusFileLastModTime = os.path.getmtime(statusFile)
         if oldStatus != self.status.status:
             self.statusChanged.emit()
 
@@ -282,6 +285,7 @@ class NodeChunk(BaseObject):
             # ask and wait for the stats thread to stop
             self.statThread.stopRequest()
             self.statThread.join()
+            self.statistics = stats.Statistics()
             del runningProcesses[self.name]
 
         self.upgradeStatusTo(Status.SUCCESS)
@@ -458,7 +462,7 @@ class BaseNode(BaseObject):
             self._cmdVars[name] = '--{name} {value}'.format(name=name, value=v)
             self._cmdVars[name + 'Value'] = str(v)
 
-            if v is not None and v is not '':
+            if v:
                 self._cmdVars[attr.attributeDesc.group] = self._cmdVars.get(attr.attributeDesc.group, '') + \
                                                           ' ' + self._cmdVars[name]
 
@@ -477,7 +481,7 @@ class BaseNode(BaseObject):
             self._cmdVars[name] = '--{name} {value}'.format(name=name, value=v)
             self._cmdVars[name + 'Value'] = str(v)
 
-            if v is not None and v is not '':
+            if v:
                 self._cmdVars[attr.attributeDesc.group] = self._cmdVars.get(attr.attributeDesc.group, '') + \
                                                           ' ' + self._cmdVars[name]
 
